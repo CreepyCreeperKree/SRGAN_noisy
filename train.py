@@ -14,9 +14,12 @@ import vgg
 from tensorlayerx.model import TrainOneStep
 from tensorlayerx.nn import Module
 import cv2
+from random import uniform
 tlx.set_device('GPU')
 
 ###====================== HYPER-PARAMETERS ===========================###
+noise_range = [0, 10]
+
 batch_size = 8
 n_epoch_init = config.TRAIN.n_epoch_init
 n_epoch = config.TRAIN.n_epoch
@@ -47,6 +50,11 @@ class TrainData(Dataset):
         img = self.train_hr_imgs[index]
         hr_patch = self.hr_trans(img)
         lr_patch = self.lr_trans(hr_patch)
+
+        noise_std = uniform(noise_range[0], noise_range[1])
+        noise = tlx.ops.random_normal(shape=image.shape, mean=0.0, stddev=noise_std, dtype=image.dtype)
+        lr_patch = lr_patch + noise
+        lr_patch = tlx.clip_by_value(lr_patch, clip_value_min=0.0, clip_value_max=255.0)
         return nor(lr_patch), nor(hr_patch)
 
     def __len__(self):
